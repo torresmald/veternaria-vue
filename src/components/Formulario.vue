@@ -1,6 +1,6 @@
 <script setup>
 import Alerta from "./Alerta.vue";
-import { ref, reactive } from "vue";
+import { reactive, computed } from "vue";
 
 const emits = defineEmits([
   "update:nombre",
@@ -12,6 +12,7 @@ const emits = defineEmits([
 ]);
 
 const paciente = defineProps({
+  id: String,
   nombre: String,
   propietario: String,
   email: String,
@@ -32,13 +33,17 @@ const validarFormulario =  () => {
   } else {
     alerta.mensaje = "Guardado Correctamente";
     alerta.tipo = "";
-    emits("guardar-paciente");
+    emits("guardar-paciente", paciente);
     setTimeout(() => {
         alerta.mensaje = ''
         alerta.tipo = ''
     }, 2000)
   }
 };
+
+const editando = computed(() => {
+  return  paciente.id
+})
 </script>
 <template>
   <div class="md:w-1/2">
@@ -118,7 +123,7 @@ const validarFormulario =  () => {
       <input
         type="submit"
         class="bg-emerald-600 text-white uppercase px-5 py-3 rounded-lg w-full hover:cursor-pointer hover:bg-emerald-800 text-xl"
-        value="Registrar Paciente"
+        :value="[editando ? 'Editar Paciente' : 'Registrar Paciente'] "
       />
     </form>
   </div>

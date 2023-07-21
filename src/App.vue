@@ -1,6 +1,6 @@
 <script setup>
-import { ref, reactive } from "vue";
-import {uid} from 'uid';
+import { ref, reactive, watch, onMounted } from "vue";
+import { uid } from "uid";
 import Header from "./components/Header.vue";
 import Formulario from "./components/Formulario.vue";
 import Paciente from "./components/Paciente.vue";
@@ -8,32 +8,71 @@ import Paciente from "./components/Paciente.vue";
 const pacientes = ref([]);
 
 const paciente = reactive({
-  id: "",
+  id: null,
   nombre: "",
   propietario: "",
   email: "",
   fecha: "",
   sintomas: "",
 });
-const resetearFormulario = () => {
-  paciente.nombre = '';
-  paciente.propietario = '';
-  paciente.email = '';
-  paciente.fecha = '';
-  paciente.sintomas = '';
+
+const agregarLocalStorage = () => {
+  localStorage.setItem('pacientes', JSON.stringify(pacientes.value));
 }
+const recuperarLocalStorage = () => {
+  const pacientesStorage = localStorage.getItem("pacientes");
+  if (pacientesStorage) {
+    pacientes.value = JSON.parse(pacientesStorage);
+  }
+}
+onMounted (() => {
+  recuperarLocalStorage()
+})
+
+watch(
+  pacientes,
+  () => {
+    agregarLocalStorage();
+  },
+  {
+    deep: true,
+  }
+);
+
+const resetearFormulario = () => {
+  paciente.id = null;
+  paciente.nombre = "";
+  paciente.propietario = "";
+  paciente.email = "";
+  paciente.fecha = "";
+  paciente.sintomas = "";
+};
 const guardarPaciente = () => {
-  pacientes.value.push({
-    ...paciente,
-    id: uid()
-  });
-  resetearFormulario()
+  if (paciente.id) {
+    const editarPaciente = pacientes.value.findIndex(
+      (element) => element.id === paciente.id
+    );
+    pacientes.value[editarPaciente] = { ...paciente };
+  } else {
+    pacientes.value.push({
+      ...paciente,
+      id: uid(),
+    });
+  }
+  resetearFormulario();
 };
 
 const editarPaciente = (id) => {
-        const pacientesEditar = pacientes.value.filter((paciente) => paciente.id === id)[0]
-        Object.assign(paciente, pacientesEditar)
-    }
+  const pacientesEditar = pacientes.value.filter(
+    (paciente) => paciente.id === id
+  )[0];
+  Object.assign(paciente, pacientesEditar);
+
+};
+
+const eliminarPaciente = (id) => {
+  pacientes.value = pacientes.value.filter((paciente) => paciente.id !== id)
+};
 </script>
 
 <template>
@@ -48,6 +87,7 @@ const editarPaciente = (id) => {
         v-model:fecha="paciente.fecha"
         v-model:sintomas="paciente.sintomas"
         @guardar-paciente="guardarPaciente"
+        :id="paciente.id"
       />
       <div class="md:w-1/2 md:h-screen overflow-y-scroll font-black">
         <h3 class="text-2xl text-center">Administra tus Pacientes</h3>
@@ -56,7 +96,12 @@ const editarPaciente = (id) => {
           <span class="text-emerald-600 font-bold">Pacientes</span>
         </p>
         <div v-if="pacientes.length">
-          <Paciente v-for="paciente in pacientes" :paciente="paciente" @editar-paciente="editarPaciente(paciente.id)" />
+          <Paciente
+            v-for="paciente in pacientes"
+            :paciente="paciente"
+            @editar-paciente="editarPaciente(paciente.id)"
+            @eliminar-paciente="eliminarPaciente(paciente.id)"
+          />
         </div>
         <p v-else class="mt-20 text-center text-2xl">No hay Pacientes</p>
       </div>
